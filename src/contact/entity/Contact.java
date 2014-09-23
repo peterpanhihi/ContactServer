@@ -1,9 +1,15 @@
 package contact.entity;
 import java.io.Serializable;
 
+import javax.persistence.Entity;
+import javax.persistence.GenerationType;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import javax.persistence.Table;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
+import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
 /**
@@ -11,28 +17,35 @@ import javax.xml.bind.annotation.XmlRootElement;
  * title is text to display for this contact in a list of contacts,
  * such as a nickname or company name.
  */
+@Entity
+@Table(name="Contact")
 @XmlRootElement(name="contact")
 @XmlAccessorType(XmlAccessType.FIELD)
 public class Contact implements Serializable {
 	private static final long serialVersionUID = 1L;
 
+	@Id
+	@GeneratedValue(strategy=GenerationType.AUTO)
 	@XmlAttribute
 	private long id;
-	private String name;
+	//TODO how to specify a required element or attribute of an entity?
+	@XmlElement(required=true,nillable=false)
 	private String title;
+	private String name;
+	
 	private String email;
 	/** URL of photo */
 	private String photoUrl;
-	private String phoneNumber;
 	
+	/** Create a new contact with no data.  Intended for use by persistence framework. */
 	public Contact() { }
 	
-	public Contact(String title, String name, String email, String phoneNumber ) {
+	/** Create a new contact with the given title, name, and email address. */
+	public Contact(String title, String name, String email ) {
 		this.title = title;
 		this.name = name;
 		this.email = email;
 		this.photoUrl = "";
-		this.setPhoneNumber(phoneNumber);
 	}
 
 	public Contact(long id) {
@@ -82,7 +95,7 @@ public class Contact implements Serializable {
 
 	@Override
 	public String toString() {
-		return String.format("[%ld] %s (%s)", id, name, title);
+		return String.format("%s: %s <%s> (%d)", title, name, email, id);
 	}
 	
 	/** Two contacts are equal if they have the same id,
@@ -93,6 +106,22 @@ public class Contact implements Serializable {
 		if (other == null || other.getClass() != this.getClass()) return false;
 		Contact contact = (Contact) other;
 		return contact.getId() == this.getId();
+	}
+	
+	/**
+	 * Copy another contact's data into this contact.
+	 * The id of this contact is not changed.  This allows
+	 * complete updates of an existing contact without
+	 * changing the object's identity.
+	 * @param other another Contact whose fields are copied to this contact.
+	 */
+	public void copyOf(Contact other) {
+		if (other == null) throw new IllegalArgumentException("source contact may not be null");
+		// don't check the id value. Its the caller's responsibility to supply correct argument
+		this.setTitle(other.getTitle()); 
+		this.setName(other.getName()); 
+		this.setEmail(other.getEmail());
+		this.setPhotoUrl(other.getPhotoUrl());
 	}
 	
 	/**
@@ -107,9 +136,9 @@ public class Contact implements Serializable {
 		// Since title is used to display contacts, don't allow empty title
 		if (! isEmpty( update.getTitle()) ) this.setTitle(update.getTitle()); // empty nickname is ok
 		// other attributes: allow an empty string as a way of deleting an attribute in update (this is hacky)
-		if (update.getName() != null ) this.setName(update.getName()); 
-		if (update.getEmail() != null) this.setEmail(update.getEmail());
-		if (update.getPhotoUrl() != null) this.setPhotoUrl(update.getPhotoUrl());
+		this.setName(update.getName()); 
+		this.setEmail(update.getEmail());
+		this.setPhotoUrl(update.getPhotoUrl());
 	}
 	
 	/**
@@ -119,13 +148,5 @@ public class Contact implements Serializable {
 	 */
 	private static boolean isEmpty(String arg) {
 		return arg == null || arg.matches("\\s*") ;
-	}
-
-	public String getPhoneNumber() {
-		return phoneNumber;
-	}
-
-	public void setPhoneNumber(String phoneNumber) {
-		this.phoneNumber = phoneNumber;
 	}
 }

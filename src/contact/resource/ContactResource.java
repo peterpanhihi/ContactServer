@@ -2,6 +2,8 @@ package contact.resource;
 
 import java.net.URI;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.inject.Singleton;
 import javax.ws.rs.*;
@@ -12,7 +14,6 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 import javax.xml.bind.JAXBElement;
-
 import contact.entity.Contact;
 import contact.service.ContactDao;
 import contact.service.DaoFactory;
@@ -48,10 +49,14 @@ public class ContactResource {
 	 */
 	@GET
 	@Produces(MediaType.APPLICATION_XML)
-	public Response getContacts(@QueryParam("q") String q){
-		List<Contact> contact;
-		if(q != null){
-			contact = dao.findByTitle(q);
+	public Response getContacts(@QueryParam("title") String title){
+		List<Contact> contact = null;
+		if(title != null){
+			Pattern pattern = Pattern.compile(".*"+title+".*",Pattern.CASE_INSENSITIVE); 
+			Matcher matcher = pattern.matcher(title);
+			if(matcher.matches()){
+				contact = dao.findByTitle(title);
+			}
 		}
 		else{
 			contact = dao.findAll();
@@ -89,6 +94,7 @@ public class ContactResource {
 	@Produces(MediaType.APPLICATION_XML)
 	public Response postContracts(JAXBElement<Contact> element, @Context UriInfo uriInfo){
 		Contact contact = element.getValue();
+		if(dao.find(contact.getId()) == null)
 		if(dao.save(contact)){
 			URI uri = uriInfo.getAbsolutePath();
 			UriBuilder builder = UriBuilder.fromUri(uri).path(contact.getId()+"");			
@@ -110,6 +116,7 @@ public class ContactResource {
 	@Path("{id}")
 	public Response putContact(JAXBElement<Contact> element, @Context UriInfo uriInfo, @PathParam("id") long id){
 		Contact contact = element.getValue();
+		if(contact.getId() != id)return Response.status(Response.Status.BAD_REQUEST).build();
 		contact.setId(id);
 		if(dao.update(contact)){
 			URI uri = uriInfo.getAbsolutePath();

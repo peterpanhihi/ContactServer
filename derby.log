@@ -1,0 +1,13 @@
+----------------------------------------------------------------
+Tue Sep 23 18:17:26 ICT 2014:
+Booting Derby version The Apache Software Foundation - Apache Derby - 10.11.1.1 - (1616546): instance a816c00e-0148-a23a-f7c5-0000052f80b0 
+on database directory /private/tmp/contactdb with class loader sun.misc.Launcher$AppClassLoader@54bedef2 
+Loaded from file:/Users/tanawat/Desktop/contacts_ws/lib/derby.jar
+java.vendor=Oracle Corporation
+java.runtime.version=1.8.0_20-b26
+user.dir=/Users/tanawat/Desktop/contacts_ws
+os.name=Mac OS X
+os.arch=x86_64
+os.version=10.9.4
+derby.system.home=null
+Database Class Loader started - derby.database.classpath=''
