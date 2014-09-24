@@ -24,7 +24,7 @@ import contact.service.DaoFactory;
  * get all contacts, update a contact, delete a contact.
  * 
  * @author Juthamas Utamaphethai
- * @version 2014.8.16
+ * @version 2014.8.23
  *
  */
 @Path("/contacts")
@@ -122,8 +122,7 @@ public class ContactResource {
 			URI uri = uriInfo.getAbsolutePath();
 			return Response.ok("Location : "+uri+"/"+contact.getId()).build();
 		}
-		return Response.status(Response.Status.NOT_FOUND).build();
-		
+		return Response.status(Response.Status.NOT_FOUND).build();	
 	}
 	
 	/**

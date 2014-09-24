@@ -53,8 +53,5 @@ public class JpaDaoFactory extends DaoFactory {
 	}
 
 	@Override
-	public void loadFile(String url) {
-		// TODO Auto-generated method stub
-		
-	}
+	public void loadFile(String url) {}
 }

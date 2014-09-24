@@ -2,8 +2,6 @@ package contact.service;
 
 import javax.xml.bind.JAXBException;
 
-import contact.service.mem.MemContactDao;
-
 /**
  * DaoFactory defines methods for obtaining instance of data access objects.
  * To create DAO you first get an instance of a concrete factory by invoking
@@ -52,5 +50,10 @@ public abstract class DaoFactory {
 	 */
 	public abstract void shutdown();
 	
+	/**
+	 * Load a saved data from a file by URL
+	 * @param url Locator of file for loading
+	 * @throws JAXBException
+	 */
 	public abstract void loadFile(String url) throws JAXBException;
 }

@@ -1,6 +1,7 @@
 package contact.entity;
 import java.io.Serializable;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GenerationType;
 import javax.persistence.GeneratedValue;
@@ -30,11 +31,17 @@ public class Contact implements Serializable {
 	private long id;
 	//TODO how to specify a required element or attribute of an entity?
 	@XmlElement(required=true,nillable=false)
+	@Column(name="contact_title")
 	private String title;
+	
+	@Column(name="contact_name")
 	private String name;
 	
+	@Column(name="contact_Email")
 	private String email;
+	
 	/** URL of photo */
+	@Column(name="photoURL")
 	private String photoUrl;
 	
 	/** Create a new contact with no data.  Intended for use by persistence framework. */

@@ -65,7 +65,7 @@ public class JpaContactDao implements ContactDao {
 	 */
 	@Override
 	public List<Contact> findAll() {
-		Query query = em.createQuery("SELECT o FROM Contact o");
+		Query query = em.createQuery("SELECT c FROM Contact c");
 		List list = query.getResultList();
 		return list;
 	}

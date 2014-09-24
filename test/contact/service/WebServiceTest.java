@@ -14,13 +14,23 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import contact.JettyMain;
-
+/**
+ * A JUnit test to test the Contact web service.
+ * Test GET one contact, POST a new contact, PUT an update, DELETE contact.
+ * Include a request that succeed and not succeed
+ * test the memory-based DAO.
+ * 
+ * @author Juthamas
+ * @version 2014.8.23
+ *
+ */
 public class WebServiceTest {
 	private static String serviceUrl;
 	private static HttpClient client;
 	private ContentResponse response;
 	private Request request;
 	private StringContentProvider provider;
+	
 	@BeforeClass
 	public static void doFirst() throws Exception{
 		//Start the Jetty server.

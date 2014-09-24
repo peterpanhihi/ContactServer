@@ -5,14 +5,14 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.glassfish.jersey.server.ServerProperties;
 
-import contact.service.mem.MemDaoFactory;
+import contact.service.DaoFactory;
 /**
  * Use a Jetty sever that is created and started via code.
  * the resource class is in the package "contact.resource" which
  * is annotated with JAX-RS @Path("/contacts").
  * 
  * @author Juthamas Utamaphethai
- * @version 2014.8.16
+ * @version 2014.8.23
  *
  */
 public class JettyMain {
@@ -23,11 +23,8 @@ public class JettyMain {
 	
 	private static Server server;
 	
-	/**
-	 * Create Jetty server and a context.
-	 * Use ServletContextHandler to hold a context.
-	 * ServletHolder holds Jersey ServletContainer for managing the resource class
-	 * and pass HTTP request to Contact resource.
+	/**Start and stop the server.
+	 * 
 	 * @param args
 	 * @throws Exception
 	 */
@@ -38,6 +35,15 @@ public class JettyMain {
 		stopServer();
 	}
 	
+	/**
+	 * Create Jetty server and a context.
+	 * Use ServletContextHandler to hold a context.
+	 * ServletHolder holds Jersey ServletContainer for managing the resource class
+	 * and pass HTTP request to Contact resource.
+	 * @param port
+	 * @return
+	 * @throws Exception
+	 */
 	public static String startServer(int port) throws Exception{
 		server = new Server(port);
 		
@@ -57,8 +63,12 @@ public class JettyMain {
 		return server.getURI().toString();
 	}
 	
+	/**
+	 * Stop the server and shutdown an DaoFactory.
+	 * @throws Exception
+	 */
 	public static void stopServer() throws Exception{
-		MemDaoFactory.getInstance().shutdown();
+		DaoFactory.getInstance().shutdown();
 		System.out.println("Stopping server.");
 		server.stop();
 	}
