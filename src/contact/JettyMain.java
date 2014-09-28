@@ -12,7 +12,7 @@ import contact.service.DaoFactory;
  * is annotated with JAX-RS @Path("/contacts").
  * 
  * @author Juthamas Utamaphethai
- * @version 2014.8.23
+ * @version 2014.9.23
  *
  */
 public class JettyMain {

@@ -21,7 +21,7 @@ import contact.JettyMain;
  * test the memory-based DAO.
  * 
  * @author Juthamas
- * @version 2014.8.23
+ * @version 2014.9.23
  *
  */
 public class WebServiceTest {

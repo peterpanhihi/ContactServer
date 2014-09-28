@@ -10,7 +10,7 @@ import javax.xml.bind.annotation.XmlRootElement;
  * list of all contacts for Memory-base DAO
  * 
  * @author Juthamas
- * @version 2014.8.23
+ * @version 2014.9.23
  *
  */
 @XmlRootElement(name="contacts")

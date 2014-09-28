@@ -24,7 +24,7 @@ import contact.service.DaoFactory;
  * get all contacts, update a contact, delete a contact.
  * 
  * @author Juthamas Utamaphethai
- * @version 2014.8.23
+ * @version 2014.9.23
  *
  */
 @Path("/contacts")
