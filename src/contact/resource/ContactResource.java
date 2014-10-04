@@ -7,14 +7,19 @@ import java.util.regex.Pattern;
 
 import javax.inject.Singleton;
 import javax.ws.rs.*;
+import javax.ws.rs.core.CacheControl;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.EntityTag;
 import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 import javax.xml.bind.JAXBElement;
 import contact.entity.Contact;
+import contact.entity.ContactList;
 import contact.service.ContactDao;
 import contact.service.DaoFactory;
 
@@ -24,32 +29,39 @@ import contact.service.DaoFactory;
  * get all contacts, update a contact, delete a contact.
  * 
  * @author Juthamas Utamaphethai
- * @version 2014.9.23
+ * @version 2014.9.30
  *
  */
 @Path("/contacts")
 @Singleton
 public class ContactResource {
 	private ContactDao dao;
+	private ContactList contactList;
+	private final Response NOT_FOUND = Response.status(Response.Status.NOT_FOUND).build();
+	private final Response NOT_MODIFIED = Response.status(Response.Status.NOT_MODIFIED).build();
+	private final Response CONFLICT = Response.status(Response.Status.CONFLICT).build();
+	private final Response BAD_REQUEST = Response.status(Response.Status.BAD_REQUEST).build();
+	private final Response PRECONDITION_FAILED = Response.status(Response.Status.PRECONDITION_FAILED).build();
 	
 	/**
 	 * Get ContactDao from DaoFactory.
 	 */
 	public ContactResource() {
 		dao = DaoFactory.getInstance().getContactDao();
+		contactList = new ContactList();
 		System.out.println("ContactResource : Initializing.");
 	}
 	
 	/**
-	 * Get a list of all contacts or
+	 * GET a list of contacts or
 	 * get contact(s) whose title contains the query string.
 	 * Convert List of contact to XML by marshal method.
-	 * @param q the query string that we want to find in contact's title.
-	 * @return response BAD REQUEST or NOT FOUND or OK if the request succeeds.
+	 * @param title, the query string that we want to find in contact's title.
+	 * @return 200 OK with contact, 404 NOT_FOUND if don't have a contact, 304 NOT_MODIFIED if contact isn't changed.
 	 */
 	@GET
 	@Produces(MediaType.APPLICATION_XML)
-	public Response getContacts(@QueryParam("title") String title){
+	public Response getContacts(@HeaderParam("If-Match") String ifMatch,@HeaderParam("If-None-Match") String ifNoneMatch, @Context Request request, @QueryParam("title") String title){
 		List<Contact> contact = null;
 		if(title != null){
 			Pattern pattern = Pattern.compile(".*"+title+".*",Pattern.CASE_INSENSITIVE); 
@@ -61,24 +73,70 @@ public class ContactResource {
 		else{
 			contact = dao.findAll();
 		}
+		
 		if(contact.isEmpty()){
-			return Response.status(Response.Status.NOT_FOUND).build();
+			return NOT_FOUND;
 		}
-		return Response.ok(mashal(contact)).build();
+		
+		if(ifMatch != null && ifNoneMatch != null)return BAD_REQUEST;
+		
+		contactList.setContacts(contact);
+		String oldEtag = contactList.getEtag();
+
+		if(ifMatch == null || ifNoneMatch == null || ifMatch.equals(oldEtag) || !ifNoneMatch.equals(oldEtag)){
+			CacheControl cc = new CacheControl();
+			// make the cookie expire after the browser is closed.
+			cc.setMaxAge(-1);
+			
+			EntityTag etag = new EntityTag(oldEtag);
+			
+			//if the preconditions indicate that the client has the latest version of the resource
+			//and the 304 Not Modified status code will be automatically assigned.
+			ResponseBuilder builder = request.evaluatePreconditions(etag);
+			if(builder == null){
+				builder = Response.ok(mashal(contact));
+				builder.tag(etag);
+			}
+			
+			builder.cacheControl(cc);
+			return builder.build();
+		}
+		return NOT_MODIFIED;
 	}
 	
 	/**
 	 * Get one contact by id.
-	 * @param id of contact
-	 * @return response OK, BAD REQUEST, or NOT FOUND if it can't find contact.
+	 * @param id of contact that user request.
+	 * @return 200 OK if success, 404 NOT_FOUND if don't have a contact, 304 NOT_MODIFIED if contact isn't changed.
 	 */
 	@GET
 	@Path("{id}")
 	@Produces(MediaType.APPLICATION_XML)
-	public Response getContact(@PathParam("id") long id){
+	public Response getContact(@HeaderParam("If-Match") String ifMatch,@HeaderParam("If-None-Match") String ifNoneMatch, @Context Request request, @PathParam("id") long id){
 		Contact contact = dao.find(id);
-		if(contact == null)return Response.status(Response.Status.NOT_FOUND).build();
-		return Response.ok(contact).build();
+		if(contact == null)return NOT_FOUND;
+		
+		if(ifMatch != null && ifNoneMatch != null)return BAD_REQUEST;
+		
+		String oldEtag = contact.getTag();
+		
+		if(ifMatch == null || ifNoneMatch == null || ifMatch.equals(oldEtag) || !ifNoneMatch.equals(oldEtag)){
+			CacheControl cc = new CacheControl();
+			cc.setMaxAge(-1);
+			
+			EntityTag etag = new EntityTag(oldEtag);
+			
+			ResponseBuilder builder = request.evaluatePreconditions(etag);
+			
+			if(builder == null){
+				builder = Response.ok(contact);
+				builder.tag(etag);
+			}
+			
+			builder.cacheControl(cc);
+			return builder.build();
+		}
+		return NOT_MODIFIED;
 	}
 	
 	/**
@@ -92,17 +150,24 @@ public class ContactResource {
 	 */
 	@POST
 	@Produces(MediaType.APPLICATION_XML)
-	public Response postContracts(JAXBElement<Contact> element, @Context UriInfo uriInfo){
+	public Response postContracts(JAXBElement<Contact> element, @Context UriInfo uriInfo, @Context Request request){
 		Contact contact = element.getValue();
 		if(dao.find(contact.getId()) == null)
 		if(dao.save(contact)){
-			URI uri = uriInfo.getAbsolutePath();
-			UriBuilder builder = UriBuilder.fromUri(uri).path(contact.getId()+"");			
-			uri = builder.build();
+			EntityTag etag = new EntityTag(contact.getTag());
+			ResponseBuilder builder = request.evaluatePreconditions(etag);
 			
-			return Response.created(uri).build();
+			if(builder == null){
+				URI uri = uriInfo.getAbsolutePath();
+				UriBuilder uriBuilder = UriBuilder.fromUri(uri).path(contact.getId()+"");			
+				uri = uriBuilder.build();
+				
+				builder = Response.created(uri);
+				builder.tag(etag);
+			}	
+			return builder.build();
 		}
-		return Response.status(Response.Status.CONFLICT).build();
+		return CONFLICT;
 	}
 	
 	/**
@@ -114,15 +179,31 @@ public class ContactResource {
 	 */
 	@PUT
 	@Path("{id}")
-	public Response putContact(JAXBElement<Contact> element, @Context UriInfo uriInfo, @PathParam("id") long id){
+	public Response putContact(@HeaderParam("If-Match") String ifMatch, @HeaderParam("If-None-Match") String ifNoneMatch, @Context Request request, JAXBElement<Contact> element, @Context UriInfo uriInfo, @PathParam("id") long id){
 		Contact contact = element.getValue();
-		if(contact.getId() != id)return Response.status(Response.Status.BAD_REQUEST).build();
-		contact.setId(id);
-		if(dao.update(contact)){
-			URI uri = uriInfo.getAbsolutePath();
-			return Response.ok("Location : "+uri+"/"+contact.getId()).build();
+		
+		if(contact.getId() != id || (ifMatch != null && ifNoneMatch != null)){
+			return BAD_REQUEST;
 		}
-		return Response.status(Response.Status.NOT_FOUND).build();	
+		
+		String oldEtag = contact.getTag();
+		
+		if(ifMatch == null || ifNoneMatch == null || ifMatch.equals(oldEtag) || !ifNoneMatch.equals(oldEtag)){
+			Contact old = dao.find(id);
+			if(old == null)return NOT_FOUND;
+			
+			EntityTag etag = new EntityTag(old.getTag());
+			ResponseBuilder builder = request.evaluatePreconditions(etag);
+			
+			if(builder == null){
+				dao.update(contact);
+				contactList.setEtag(this.hashCode());
+				builder = Response.ok();
+				builder.tag(new EntityTag( contact.getTag() ));
+			}	
+			return builder.build();
+		}
+		return PRECONDITION_FAILED;
 	}
 	
 	/**
@@ -132,11 +213,26 @@ public class ContactResource {
 	 */
 	@DELETE
 	@Path("{id}")
-	public Response deleteContact(@PathParam("id") long id){
-		if(dao.delete(id))
-			return Response.ok().build();
-		else
-			return Response.status(Response.Status.NOT_FOUND).build();
+	public Response deleteContact(@HeaderParam("If-Match") String ifMatch, @HeaderParam("If-None-Match") String ifNoneMatch, @Context Request request,@PathParam("id") long id){
+		Contact oldContact = dao.find(id);
+		if(oldContact == null)return NOT_FOUND;
+		
+		if(ifMatch != null && ifNoneMatch != null)return BAD_REQUEST;
+		
+		String oldEtag = oldContact.getTag();
+		if(ifMatch == null || ifNoneMatch == null || ifMatch.equals(oldEtag) || !ifNoneMatch.equals(oldEtag)){
+			
+			EntityTag etag = new EntityTag(oldContact.getTag());
+			ResponseBuilder builder = request.evaluatePreconditions(etag);
+			
+			if(builder == null){
+				dao.delete(id);
+				contactList.setEtag(this.hashCode());
+				builder = Response.ok();
+			}
+			return builder.build();
+		}
+		return PRECONDITION_FAILED;
 	}
 	
 	/**

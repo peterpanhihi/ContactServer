@@ -16,14 +16,18 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlRootElement(name="contacts")
 @XmlAccessorType(XmlAccessType.FIELD)
 public class ContactList {
-	/** collect all contacts. */
+	/** Collect all contacts. */
 	private List<Contact> contact;
+	
+	/** A string representing a version of a representation of a ContactList. */
+	private String etag;
 	
 	/**
 	 * create a new list without data.
 	 */
 	public ContactList() {
 		setContacts(new ArrayList<Contact>());
+		setEtag(this.hashCode());
 	}
 	
 	public List<Contact> getContacts() {
@@ -32,5 +36,13 @@ public class ContactList {
 	
 	public void setContacts(List<Contact> contacts) {
 		this.contact = contacts;
+	}
+
+	public String getEtag() {
+		return etag;
+	}
+
+	public void setEtag(int hashCode) {
+		this.etag = Integer.toString(hashCode);
 	}
 }

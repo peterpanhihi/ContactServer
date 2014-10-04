@@ -156,4 +156,8 @@ public class Contact implements Serializable {
 	private static boolean isEmpty(String arg) {
 		return arg == null || arg.matches("\\s*") ;
 	}
+	
+	public String getTag(){
+		return Integer.toString((getId() + getTitle() + getName() + getEmail()).hashCode());
+	}
 }

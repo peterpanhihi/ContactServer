@@ -35,7 +35,7 @@ public class WebServiceTest {
 	public static void doFirst() throws Exception{
 		//Start the Jetty server.
 		//Suppose this method returns the URL (with port) of the server
-		serviceUrl = JettyMain.startServer( 8080 )+"contacts";
+		serviceUrl = JettyMain.startServer( 8080 )+"contacts/";
 		client = new HttpClient();
 		client.start();
 	}
@@ -51,11 +51,11 @@ public class WebServiceTest {
 	public void testGet(){
 		try {
 			int id = 101;
-			response = client.GET(serviceUrl+"/"+id);
+			response = client.GET(serviceUrl+id);
 			assertEquals(Response.Status.OK.getStatusCode(),response.getStatus());
 			
 			id++;
-			response = client.GET(serviceUrl+"/"+id);
+			response = client.GET(serviceUrl+id);
 			assertEquals(Response.Status.OK.getStatusCode(),response.getStatus());
 		} catch (Exception e) {}
 	}
@@ -63,10 +63,10 @@ public class WebServiceTest {
 	@Test
 	public void failGet(){
 		try{
-			response = client.GET(serviceUrl+"/123123123");
+			response = client.GET(serviceUrl+"123123123");
 			assertEquals(Response.Status.NOT_FOUND.getStatusCode(), response.getStatus());
 			
-			response = client.GET(serviceUrl+"/103");
+			response = client.GET(serviceUrl+"103");
 			assertEquals(Response.Status.NOT_FOUND.getStatusCode(), response.getStatus());
 		} catch(Exception e){}
 	}
@@ -101,7 +101,7 @@ public class WebServiceTest {
 	public void testPut(){
 		try{
 			provider = new StringContentProvider("<contact id=\"222\"><title>Test put contact</title><name>Put Experimental</name><email>put@testing.com</email><photoUrl/></contact>");
-			request = client.newRequest(serviceUrl+"/222");
+			request = client.newRequest(serviceUrl+"222");
 			request = request.content(provider, "application/xml");
 			request = request.method(HttpMethod.PUT);
 			
@@ -114,7 +114,7 @@ public class WebServiceTest {
 	public void failPut(){
 		try{
 			provider = new StringContentProvider("<contact id=\"222\"><title>Test put contact</title><name>Put Experimental</name><email>put@testing.com</email><photoUrl/></contact>");
-			request = client.newRequest(serviceUrl+"/333");
+			request = client.newRequest(serviceUrl+"333");
 			request = request.content(provider, "application/xml");
 			request = request.method(HttpMethod.PUT);
 			
@@ -122,7 +122,7 @@ public class WebServiceTest {
 			assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
 			
 			provider = new StringContentProvider("<contact id=\"444\"><title>Test put contact</title><name>Put Experimental</name><email>put@testing.com</email><photoUrl/></contact>");
-			request = client.newRequest(serviceUrl+"/444");
+			request = client.newRequest(serviceUrl+"444");
 			request = request.content(provider, "application/xml");
 			request = request.method(HttpMethod.PUT);
 			
@@ -135,7 +135,7 @@ public class WebServiceTest {
 	@Test
 	public void testDelete(){
 		try{
-			request = client.newRequest(serviceUrl+"/222");
+			request = client.newRequest(serviceUrl+"222");
 			request = request.method(HttpMethod.DELETE);
 			
 			response = request.send();
@@ -146,7 +146,7 @@ public class WebServiceTest {
 	@Test
 	public void failDelete(){
 		try{
-			request = client.newRequest(serviceUrl+"/555");
+			request = client.newRequest(serviceUrl+"555");
 			request = request.method(HttpMethod.DELETE);
 			
 			response = request.send();
