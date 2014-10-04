@@ -146,7 +146,7 @@ public class ContactResource {
 	 * 
 	 * @param element get values of contact's element.
 	 * @param uriInfo access request header and build URI information
-	 * @return the Location header if it created and response CONFLICT if the contact already exists
+	 * @return the Location header if it created and 409 CONFLICT if the contact already exists
 	 */
 	@POST
 	@Produces(MediaType.APPLICATION_XML)
