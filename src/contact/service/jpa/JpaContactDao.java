@@ -33,7 +33,7 @@ public class JpaContactDao implements ContactDao {
 	 */
 	public JpaContactDao(EntityManager em) {
 		this.em = em;
-		createTestContact( );
+//		createTestContact( );
 	}
 	
 	/** add contacts for testing. */

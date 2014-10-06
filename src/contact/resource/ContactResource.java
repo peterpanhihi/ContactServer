@@ -52,15 +52,21 @@ public class ContactResource {
 	public Response getContacts(@QueryParam("title") String title){
 		List<Contact> contact = null;
 		if(title != null){
+			
+// This looks like a useless test to me.
+// You create a pattern from a title and then match the title+wildcard to title. It should always match.
+			
 			Pattern pattern = Pattern.compile(".*"+title+".*",Pattern.CASE_INSENSITIVE); 
 			Matcher matcher = pattern.matcher(title);
 			if(matcher.matches()){
 				contact = dao.findByTitle(title);
 			}
+// What do you do if it doesn't match???
 		}
 		else{
 			contact = dao.findAll();
 		}
+//ERROR it is OK for contacts to be empty if no title is given.
 		if(contact.isEmpty()){
 			return Response.status(Response.Status.NOT_FOUND).build();
 		}
@@ -94,6 +100,7 @@ public class ContactResource {
 	@Produces(MediaType.APPLICATION_XML)
 	public Response postContracts(JAXBElement<Contact> element, @Context UriInfo uriInfo){
 		Contact contact = element.getValue();
+// BAD CODING: Improper indentation.
 		if(dao.find(contact.getId()) == null)
 		if(dao.save(contact)){
 			URI uri = uriInfo.getAbsolutePath();
@@ -102,6 +109,8 @@ public class ContactResource {
 			
 			return Response.created(uri).build();
 		}
+//LOGIC ERROR: what if dao.save() returns false?  The response should not be conflict.
+//AVOID dangling "else" like this
 		return Response.status(Response.Status.CONFLICT).build();
 	}
 	
@@ -120,6 +129,7 @@ public class ContactResource {
 		contact.setId(id);
 		if(dao.update(contact)){
 			URI uri = uriInfo.getAbsolutePath();
+//ERROR:
 			return Response.ok("Location : "+uri+"/"+contact.getId()).build();
 		}
 		return Response.status(Response.Status.NOT_FOUND).build();	

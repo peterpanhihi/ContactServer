@@ -2,6 +2,9 @@ package contact.service;
 
 import static org.junit.Assert.*;
 
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
+
 import javax.ws.rs.core.Response;
 
 import org.eclipse.jetty.client.HttpClient;
@@ -48,8 +51,9 @@ public class WebServiceTest {
 	}
 	
 	@Test
-	public void testGet(){
-		try {
+	public void testGet() throws InterruptedException, ExecutionException, TimeoutException{
+//		try {
+// This *assumes* that contact 101 exists but you didn't create it in the test suite.
 			int id = 101;
 			response = client.GET(serviceUrl+"/"+id);
 			assertEquals(Response.Status.OK.getStatusCode(),response.getStatus());
@@ -57,23 +61,24 @@ public class WebServiceTest {
 			id++;
 			response = client.GET(serviceUrl+"/"+id);
 			assertEquals(Response.Status.OK.getStatusCode(),response.getStatus());
-		} catch (Exception e) {}
+//ERROR: These try - catch blocks are hiding errors in the code being tested!
+//		} catch (Exception e) {}
 	}
 	
 	@Test
-	public void failGet(){
-		try{
+	public void failGet() throws InterruptedException, ExecutionException, TimeoutException{
+//		try{
 			response = client.GET(serviceUrl+"/123123123");
 			assertEquals(Response.Status.NOT_FOUND.getStatusCode(), response.getStatus());
 			
 			response = client.GET(serviceUrl+"/103");
 			assertEquals(Response.Status.NOT_FOUND.getStatusCode(), response.getStatus());
-		} catch(Exception e){}
+//		} catch(Exception e){}
 	}
 	
 	@Test
-	public void testPost(){
-		try{
+	public void testPost() throws InterruptedException, TimeoutException, ExecutionException{
+//		try{
 			provider = new StringContentProvider("<contact id=\"222\"><title>Test contact</title><name>test Experimental</name><email>test@testing.com</email><photoUrl/></contact>");
 			request = client.newRequest(serviceUrl);
 			request = request.content(provider, "application/xml");
@@ -81,12 +86,13 @@ public class WebServiceTest {
 			
 			response = request.send();
 			assertEquals(Response.Status.CREATED.getStatusCode(), response.getStatus());
-		} catch(Exception e){}
+// INSUFFICIENT - didn't test Location header, didn't test if contact saved correctly
+//		} catch(Exception e){}
 	}
 	
 	@Test
-	public void failPost(){
-		try{
+	public void failPost() throws InterruptedException, TimeoutException, ExecutionException{
+//		try{
 			provider = new StringContentProvider("<contact id=\"222\"><title>Test contact</title><name>test Experimental</name><email>test@testing.com</email><photoUrl/></contact>");
 			request = client.newRequest(serviceUrl);
 			request = request.content(provider, "application/xml");
@@ -94,12 +100,12 @@ public class WebServiceTest {
 			
 			response = request.send();
 			assertEquals(Response.Status.CONFLICT.getStatusCode(), response.getStatus());
-		} catch(Exception e){}
+//		} catch(Exception e){}
 	}
 	
 	@Test
-	public void testPut(){
-		try{
+	public void testPut() throws InterruptedException, TimeoutException, ExecutionException{
+//		try{
 			provider = new StringContentProvider("<contact id=\"222\"><title>Test put contact</title><name>Put Experimental</name><email>put@testing.com</email><photoUrl/></contact>");
 			request = client.newRequest(serviceUrl+"/222");
 			request = request.content(provider, "application/xml");
@@ -107,12 +113,12 @@ public class WebServiceTest {
 			
 			response = request.send();
 			assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
-		}catch(Exception e){}
+//		}catch(Exception e){}
 	}
 	
 	@Test
-	public void failPut(){
-		try{
+	public void failPut() throws InterruptedException, TimeoutException, ExecutionException{
+//		try{
 			provider = new StringContentProvider("<contact id=\"222\"><title>Test put contact</title><name>Put Experimental</name><email>put@testing.com</email><photoUrl/></contact>");
 			request = client.newRequest(serviceUrl+"/333");
 			request = request.content(provider, "application/xml");
@@ -129,28 +135,28 @@ public class WebServiceTest {
 			response = request.send();
 			assertEquals(Response.Status.NOT_FOUND.getStatusCode(), response.getStatus());
 			
-		}catch(Exception e){}
+//		}catch(Exception e){}
 	}
 	
 	@Test
-	public void testDelete(){
-		try{
+	public void testDelete() throws InterruptedException, TimeoutException, ExecutionException{
+//		try{
 			request = client.newRequest(serviceUrl+"/222");
 			request = request.method(HttpMethod.DELETE);
 			
 			response = request.send();
 			assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
-		}catch(Exception e){}
+//		}catch(Exception e){}
 	}
 	
 	@Test
-	public void failDelete(){
-		try{
+	public void failDelete() throws InterruptedException, TimeoutException, ExecutionException{
+//		try{
 			request = client.newRequest(serviceUrl+"/555");
 			request = request.method(HttpMethod.DELETE);
 			
 			response = request.send();
 			assertEquals(Response.Status.NOT_FOUND.getStatusCode(), response.getStatus());
-		}catch(Exception e){}
+//		}catch(Exception e){}
 	}
 }
