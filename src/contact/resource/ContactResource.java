@@ -29,7 +29,7 @@ import contact.service.DaoFactory;
  * get all contacts, update a contact, delete a contact.
  * 
  * @author Juthamas Utamaphethai
- * @version 2014.9.30
+ * @version 2014.10.6
  *
  */
 @Path("/contacts")
@@ -53,9 +53,9 @@ public class ContactResource {
 	}
 	
 	/**
-	 * GET a list of contacts or
+	 * Get a list of contacts or
 	 * get contact(s) whose title contains the query string.
-	 * Convert List of contact to XML by marshal method.
+	 * 
 	 * @param title, the query string that we want to find in contact's title.
 	 * @return 200 OK with contact, 404 NOT_FOUND if don't have a contact, 304 NOT_MODIFIED if contact isn't changed.
 	 */
@@ -64,19 +64,9 @@ public class ContactResource {
 	public Response getContacts(@HeaderParam("If-Match") String ifMatch,@HeaderParam("If-None-Match") String ifNoneMatch, @Context Request request, @QueryParam("title") String title){
 		List<Contact> contact = null;
 		if(title != null){
-			Pattern pattern = Pattern.compile(".*"+title+".*",Pattern.CASE_INSENSITIVE); 
-			Matcher matcher = pattern.matcher(title);
-			if(matcher.matches()){
 				contact = dao.findByTitle(title);
-			}
 		}
-		else{
-			contact = dao.findAll();
-		}
-		
-		if(contact.isEmpty()){
-			return NOT_FOUND;
-		}
+		contact = dao.findAll();
 		
 		if(ifMatch != null && ifNoneMatch != null)return BAD_REQUEST;
 		
@@ -152,22 +142,24 @@ public class ContactResource {
 	@Produces(MediaType.APPLICATION_XML)
 	public Response postContracts(JAXBElement<Contact> element, @Context UriInfo uriInfo, @Context Request request){
 		Contact contact = element.getValue();
-		if(dao.find(contact.getId()) == null)
-		if(dao.save(contact)){
-			EntityTag etag = new EntityTag(contact.getTag());
-			ResponseBuilder builder = request.evaluatePreconditions(etag);
-			
-			if(builder == null){
-				URI uri = uriInfo.getAbsolutePath();
-				UriBuilder uriBuilder = UriBuilder.fromUri(uri).path(contact.getId()+"");			
-				uri = uriBuilder.build();
-				
-				builder = Response.created(uri);
-				builder.tag(etag);
-			}	
-			return builder.build();
+		
+		if(isContactExist(contact)){
+			return CONFLICT;
 		}
-		return CONFLICT;
+		
+		dao.save(contact);
+		EntityTag etag = new EntityTag(contact.getTag());
+		ResponseBuilder builder = request.evaluatePreconditions(etag);
+			
+		if(builder == null){
+			URI uri = uriInfo.getAbsolutePath();
+			UriBuilder uriBuilder = UriBuilder.fromUri(uri).path(contact.getId()+"");			
+			uri = uriBuilder.build();
+				
+			builder = Response.created(uri);
+			builder.tag(etag);
+		}	
+		return builder.build();
 	}
 	
 	/**
@@ -175,7 +167,7 @@ public class ContactResource {
 	 * @param element contains value that wants to update
 	 * @param uriInfo access request header
 	 * @param id for updating the contact
-	 * @return the Location header in the response of OK and NOT FOUND if can't update id
+	 * @return the Location header in the response of 200 OK and 400 NOT FOUND if can't update id
 	 */
 	@PUT
 	@Path("{id}")
@@ -209,7 +201,7 @@ public class ContactResource {
 	/**
 	 * Delete a contact with matching id.
 	 * @param id for deleting contact
-	 * @return response OK or NOT FOUND if not found contact to delete
+	 * @return response 200 OK or 400 NOT FOUND if not found contact to delete
 	 */
 	@DELETE
 	@Path("{id}")
@@ -242,5 +234,14 @@ public class ContactResource {
 	 */
 	public GenericEntity mashal(List<Contact> contacts){
 		return new GenericEntity<List<Contact>>(contacts){};
+	}
+	
+	/**
+	 * Check contact does existed.
+	 * @param contact is checked
+	 * @return true if contact does exist
+	 */
+	public boolean isContactExist(Contact contact){
+		return dao.find(contact.getId()) != null;
 	}
 }
