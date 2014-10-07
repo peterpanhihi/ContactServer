@@ -67,5 +67,10 @@ public interface ContactDao {
 	 * @return true if the update is applied successfully.
 	 */
 	public abstract boolean update(Contact update);
+	
+	/**
+	 * Remove all contacts.
+	 */
+	public abstract void removeAll();
 
 }

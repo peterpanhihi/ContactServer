@@ -67,9 +67,7 @@ public class WebServiceTest {
 	
 	@After
 	public void clean() throws Exception{
-		dao.delete(tester1.getId());
-		dao.delete(tester2.getId());
-		
+		dao.removeAll();
 		client.stop();
 	}
 	
@@ -113,7 +111,7 @@ public class WebServiceTest {
 	
 	@Test
 	public void failPost() throws InterruptedException, TimeoutException, ExecutionException{
-		provider = new StringContentProvider("<contact id=\"222\"><title>Test contact</title><name>test Experimental</name><email>test@testing.com</email><photoUrl/></contact>");
+		provider = new StringContentProvider("<contact id=\"101\"><title>Test contact</title><name>test Experimental</name><email>test@testing.com</email><photoUrl/></contact>");
 		request = client.newRequest(serviceUrl);
 		request = request.content(provider, "application/xml");
 		request = request.method(HttpMethod.POST);
@@ -131,7 +129,6 @@ public class WebServiceTest {
 		request = request.method(HttpMethod.PUT);
 			
 		response = request.send();
-		System.out.println(response.getStatus());
 		assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
 	}
 	
@@ -156,7 +153,7 @@ public class WebServiceTest {
 	
 	@Test
 	public void testDelete() throws InterruptedException, TimeoutException, ExecutionException{
-		request = client.newRequest(serviceUrl+"/222");
+		request = client.newRequest(serviceUrl+"/"+tester1.getId());
 		request = request.method(HttpMethod.DELETE);
 		
 		response = request.send();

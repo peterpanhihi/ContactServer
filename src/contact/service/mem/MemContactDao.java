@@ -135,4 +135,8 @@ public class MemContactDao implements ContactDao {
 		return id; // this should never happen
 	}
 	
+	public void removeAll(){
+		contacts.clear();
+	}
+	
 }

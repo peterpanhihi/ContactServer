@@ -143,4 +143,7 @@ public class JpaContactDao implements ContactDao {
 			return false;
 		}
 	}
+
+	@Override
+	public void removeAll() {}
 }

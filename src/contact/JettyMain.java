@@ -40,11 +40,10 @@ public class JettyMain {
 	 * Use ServletContextHandler to hold a context.
 	 * ServletHolder holds Jersey ServletContainer for managing the resource class
 	 * and pass HTTP request to Contact resource.
-	 * @param port
-	 * @return
-	 * @throws Exception
+	 * @param port port for starting the server
+	 * @return URI of server
 	 */
-	public static String startServer(int port) throws Exception{
+	public static String startServer(int port){
 		server = new Server(port);
 		
 		ServletContextHandler context = new ServletContextHandler( ServletContextHandler.SESSIONS );
@@ -59,17 +58,26 @@ public class JettyMain {
 		server.setHandler(context);
 		
 		System.out.println("Starting Jetty server on port " + port);
-		server.start();
+		
+		try {
+			server.start();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
 		return server.getURI().toString();
 	}
 	
 	/**
 	 * Stop the server and shutdown an DaoFactory.
-	 * @throws Exception
 	 */
-	public static void stopServer() throws Exception{
+	public static void stopServer(){
 		DaoFactory.getInstance().shutdown();
 		System.out.println("Stopping server.");
-		server.stop();
+		try {
+			server.stop();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 }
