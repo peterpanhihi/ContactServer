@@ -19,7 +19,6 @@ import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 import javax.xml.bind.JAXBElement;
 import contact.entity.Contact;
-import contact.entity.ContactList;
 import contact.service.ContactDao;
 import contact.service.DaoFactory;
 
@@ -36,7 +35,6 @@ import contact.service.DaoFactory;
 @Singleton
 public class ContactResource {
 	private ContactDao dao;
-	private ContactList contactList;
 	private final Response NOT_FOUND = Response.status(Response.Status.NOT_FOUND).build();
 	private final Response NOT_MODIFIED = Response.status(Response.Status.NOT_MODIFIED).build();
 	private final Response CONFLICT = Response.status(Response.Status.CONFLICT).build();
@@ -48,7 +46,6 @@ public class ContactResource {
 	 */
 	public ContactResource() {
 		dao = DaoFactory.getInstance().getContactDao();
-		contactList = new ContactList();
 		System.out.println("ContactResource : Initializing.");
 	}
 	
@@ -165,7 +162,6 @@ public class ContactResource {
 			
 			if(builder == null){
 				dao.update(contact);
-				contactList.setEtag(this.hashCode());
 				builder = Response.ok();
 				builder.tag(new EntityTag( contact.getTag() ));
 			}	
@@ -195,7 +191,6 @@ public class ContactResource {
 			
 			if(builder == null){
 				dao.delete(id);
-				contactList.setEtag(this.hashCode());
 				builder = Response.ok();
 			}
 			return builder.build();
