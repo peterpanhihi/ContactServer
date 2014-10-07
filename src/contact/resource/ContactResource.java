@@ -61,37 +61,13 @@ public class ContactResource {
 	 */
 	@GET
 	@Produces(MediaType.APPLICATION_XML)
-	public Response getContacts(@HeaderParam("If-Match") String ifMatch,@HeaderParam("If-None-Match") String ifNoneMatch, @Context Request request, @QueryParam("title") String title){
+	public Response getContacts(@QueryParam("title") String title){
 		List<Contact> contact = null;
 		if(title != null){
 				contact = dao.findByTitle(title);
 		}
 		contact = dao.findAll();
-		
-		if(ifMatch != null && ifNoneMatch != null)return BAD_REQUEST;
-		
-		contactList.setContacts(contact);
-		String oldEtag = contactList.getEtag();
-
-		if(ifMatch == null || ifNoneMatch == null || ifMatch.equals(oldEtag) || !ifNoneMatch.equals(oldEtag)){
-			CacheControl cc = new CacheControl();
-			// make the cookie expire after the browser is closed.
-			cc.setMaxAge(-1);
-			
-			EntityTag etag = new EntityTag(oldEtag);
-			
-			//if the preconditions indicate that the client has the latest version of the resource
-			//and the 304 Not Modified status code will be automatically assigned.
-			ResponseBuilder builder = request.evaluatePreconditions(etag);
-			if(builder == null){
-				builder = Response.ok(mashal(contact));
-				builder.tag(etag);
-			}
-			
-			builder.cacheControl(cc);
-			return builder.build();
-		}
-		return NOT_MODIFIED;
+		return Response.ok(mashal(contact)).build();
 	}
 	
 	/**
