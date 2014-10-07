@@ -2,9 +2,6 @@ package contact.resource;
 
 import java.net.URI;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import javax.inject.Singleton;
 import javax.ws.rs.*;
 import javax.ws.rs.core.CacheControl;
@@ -113,7 +110,7 @@ public class ContactResource {
 	 */
 	@POST
 	@Produces(MediaType.APPLICATION_XML)
-	public Response postContracts(JAXBElement<Contact> element, @Context UriInfo uriInfo, @Context Request request){
+	public Response postContacts(JAXBElement<Contact> element, @Context UriInfo uriInfo, @Context Request request){
 		Contact contact = element.getValue();
 		
 		if(isContactExist(contact)){
