@@ -8,10 +8,13 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.util.StringContentProvider;
 import org.eclipse.jetty.http.HttpMethod;
+import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import contact.JettyMain;
+import contact.entity.Contact;
 
 /**
  * JUnit test to test the use of ETag.
@@ -23,31 +26,49 @@ import contact.JettyMain;
 public class EtagTest {
 	private static String serviceUrl;
 	private static HttpClient client;
+	private Contact tester1;
+	private Contact tester2;
+	private ContactDao dao = DaoFactory.getInstance().getContactDao();
 	private ContentResponse response;
 	private Request request;
 	private StringContentProvider provider;
 	private String etag;
-	private int id = 666;
 	
 	@BeforeClass
 	public static void doFirst() throws Exception{
 		//Start the Jetty server.
 		//Suppose this method returns the URL (with port) of the server
 		serviceUrl = JettyMain.startServer( 8080 )+"contacts/";
-		client = new HttpClient();
-		client.start();
-
 	}
 	
 	@AfterClass
 	public static void doLast() throws Exception{
 		//stop the Jetty server after the last test
 		JettyMain.stopServer();
+	}
+	
+	@Before
+	public void setUp() throws Exception{
+		long id = 101;
+		tester1 = new Contact("Test contact", "Joe Experimental", "none@testing.com");
+		tester1.setId(id);
+		id++;
+		tester2 = new Contact("Another Test contact", "Testosterone", "testee@foo.com");
+		tester2.setId(id);
+		dao.save(tester1);
+		dao.save(tester2);
+		
+		client = new HttpClient();
+		client.start();
+	}
+	
+	@After
+	public void clean() throws Exception{
+		dao.removeAll();
 		client.stop();
 	}
 	
-	@Test
-	public void testETagPost(){
+	public void testETagPost(long id){
 		try{
 			provider = new StringContentProvider("<contact id=\""+id+"\"><title>Test contact</title><name>test Experimental</name><email>test@testing.com</email><photoUrl/></contact>");
 			request = client.newRequest(serviceUrl);
@@ -67,16 +88,12 @@ public class EtagTest {
 	@Test
 	public void TestGetEtag(){
 		try{
-			id = 101;
-			
-			response = client.GET(serviceUrl+id);
+			response = client.GET(serviceUrl+tester1.getId());
 			assertEquals(Status.OK.getStatusCode(),response.getStatus());
 			etag = response.getHeaders().get("Etag");
 			assertTrue(etag != null);
 			
-			id++;
-			
-			response = client.GET(serviceUrl+id);
+			response = client.GET(serviceUrl+tester2.getId());
 			assertEquals(Status.OK.getStatusCode(),response.getStatus());
 			etag = response.getHeaders().get("Etag");
 			assertTrue(etag != null);
@@ -89,21 +106,20 @@ public class EtagTest {
 	@Test
 	public void TestGETIfNonMatch(){
 		try{
-			id = 101;
-			
-			response = client.GET(serviceUrl+id);
+		
+			response = client.GET(serviceUrl+tester1.getId());
 			assertEquals(Status.OK.getStatusCode(),response.getStatus());
 			etag = response.getHeaders().get("Etag");
 			assertTrue(etag != null);
 			
 			//Test GET If-None-Match (ETag is same)
-			request = client.newRequest(serviceUrl+id).header("If-None-Match", etag).method(HttpMethod.GET);
+			request = client.newRequest(serviceUrl+tester1.getId()).header("If-None-Match", etag).method(HttpMethod.GET);
 			response = request.send();
 			assertEquals(Status.NOT_MODIFIED.getStatusCode(), response.getStatus());
 			
-			//Test GET If-None-Match = different Etag
-			etag = client.GET(serviceUrl+102).getHeaders().get("Etag");
-			request = client.newRequest(serviceUrl+id).header("If-None-Match", etag).method(HttpMethod.GET);
+			//Test GET If-None-Match = different ETag
+			etag = client.GET(serviceUrl+tester2.getId()).getHeaders().get("Etag");
+			request = client.newRequest(serviceUrl+tester1.getId()).header("If-None-Match", etag).method(HttpMethod.GET);
 			response = request.send();
 			assertEquals(Status.OK.getStatusCode(), response.getStatus());
 			etag = response.getHeaders().get("Etag");
@@ -117,16 +133,14 @@ public class EtagTest {
 	@Test
 	public void TestGETIfMatch(){
 		try{
-			id = 101;
-			
-			response = client.GET(serviceUrl+id);
+			response = client.GET(serviceUrl+tester1.getId());
 			assertEquals(Status.OK.getStatusCode(),response.getStatus());
 			etag = response.getHeaders().get("Etag");
 			assertTrue(etag != null);
 			
 			
 			//Test GET If-Match = same ETag 
-			request = client.newRequest(serviceUrl+id).header("If-Match", etag).method(HttpMethod.GET);
+			request = client.newRequest(serviceUrl+tester1.getId()).header("If-Match", etag).method(HttpMethod.GET);
 			response = request.send();
 			assertEquals(Status.OK.getStatusCode(), response.getStatus());
 			etag = response.getHeaders().get("Etag");
@@ -139,17 +153,16 @@ public class EtagTest {
 	
 	@Test
 	public void failGet(){
-		id = 101;
 		try{
 			
-			String etag = client.GET(serviceUrl+id).getHeaders().get("Etag");
-			request = client.newRequest(serviceUrl+id).header("If-Match",etag).header("If-None-Match", etag).method(HttpMethod.GET);
+			String etag = client.GET(serviceUrl+tester1.getId()).getHeaders().get("Etag");
+			request = client.newRequest(serviceUrl+tester1.getId()).header("If-Match",etag).header("If-None-Match", etag).method(HttpMethod.GET);
 			response = request.send();
 			assertEquals(Status.BAD_REQUEST.getStatusCode(), response.getStatus());
 			
 			//FAIL : Test GET If-Match (different ETag).
-			etag = client.GET(serviceUrl+102).getHeaders().get("Etag");
-			request = client.newRequest(serviceUrl+id).header("If-Match", etag).method(HttpMethod.GET);
+			etag = client.GET(serviceUrl+tester2.getId()).getHeaders().get("Etag");
+			request = client.newRequest(serviceUrl+tester1.getId()).header("If-Match", etag).method(HttpMethod.GET);
 			response = request.send();
 			assertEquals(Status.PRECONDITION_FAILED.getStatusCode(), response.getStatus());
 			
@@ -162,13 +175,13 @@ public class EtagTest {
 	public void passPut(){
 		try{
 			//Get Etag. 
-			response = client.GET(serviceUrl+102);
+			response = client.GET(serviceUrl+tester2.getId());
 			etag = response.getHeaders().get("Etag");
 			
 			//Test If-Match should same as current ETag.
 			etag = response.getHeaders().get("Etag");
-			provider = new StringContentProvider("<contact id=\"102\"><title>Test put contact with If-Match</title><name>Put Match Experimental</name><email>match@testing.com</email><photoUrl/></contact>");
-			request = client.newRequest(serviceUrl+"102").header("If-Match", etag);
+			provider = new StringContentProvider("<contact id=\""+tester2.getId()+"\"><title>Test put contact with If-Match</title><name>Put Match Experimental</name><email>match@testing.com</email><photoUrl/></contact>");
+			request = client.newRequest(serviceUrl+tester2.getId()).header("If-Match", etag);
 			request = request.content(provider, "application/xml");
 			request = request.method(HttpMethod.PUT);
 			response = request.send();
@@ -177,8 +190,8 @@ public class EtagTest {
 			
 			//Test If-None-Match shouldn't has same ETag.
 			//Unless the same ETag.
-			provider = new StringContentProvider("<contact id=\"101\"><title>Test put contact</title><name>Put Experimental</name><email>put@testing.com</email><photoUrl/></contact>");
-			request = client.newRequest(serviceUrl+"101").header("If-None-Match", etag);
+			provider = new StringContentProvider("<contact id=\""+tester1.getId()+"\"><title>Test put contact</title><name>Put Experimental</name><email>put@testing.com</email><photoUrl/></contact>");
+			request = client.newRequest(serviceUrl+tester1.getId()).header("If-None-Match", etag);
 			request = request.content(provider, "application/xml");
 			request = request.method(HttpMethod.PUT);
 			response = request.send();
@@ -194,12 +207,12 @@ public class EtagTest {
 	public void failPut(){
 		try{
 			//Get Etag. 
-			response = client.GET(serviceUrl+101);
+			response = client.GET(serviceUrl+tester1.getId());
 			etag = response.getHeaders().get("Etag");
 			
 			//FAIL : Test send both of If-None-Match and If-Match.
-			provider = new StringContentProvider("<contact id=\"101\"><title>Test put contact</title><name>Put Experimental</name><email>put@testing.com</email><photoUrl/></contact>");
-			request = client.newRequest(serviceUrl+"101").header("If-None-Match", etag).header("If-Match", etag);
+			provider = new StringContentProvider("<contact id=\""+tester1.getId()+"\"><title>Test put contact</title><name>Put Experimental</name><email>put@testing.com</email><photoUrl/></contact>");
+			request = client.newRequest(serviceUrl+tester1.getId()).header("If-None-Match", etag).header("If-Match", etag);
 			request = request.content(provider, "application/xml");
 			request = request.method(HttpMethod.PUT);
 			response = request.send();
@@ -207,7 +220,7 @@ public class EtagTest {
 			assertEquals(Status.BAD_REQUEST.getStatusCode(), response.getStatus());
 			
 			//FAIL: Test If-None-Match match with current ETag.
-			request = client.newRequest(serviceUrl+"101").header("If-None-Match", etag);
+			request = client.newRequest(serviceUrl+tester1.getId()).header("If-None-Match", etag);
 			request = request.content(provider, "application/xml");
 			request = request.method(HttpMethod.PUT);
 			response = request.send();
@@ -215,8 +228,8 @@ public class EtagTest {
 			assertEquals(Status.PRECONDITION_FAILED.getStatusCode(), response.getStatus());
 			
 			//FAIL : Test If-Match does not match with current ETag.
-			etag = client.GET(serviceUrl+102).getHeaders().get("Etag");
-			request = client.newRequest(serviceUrl+"101").header("If-Match", etag);
+			etag = client.GET(serviceUrl+tester2.getId()).getHeaders().get("Etag");
+			request = client.newRequest(serviceUrl+tester1.getId()).header("If-Match", etag);
 			request = request.content(provider, "application/xml");
 			request = request.method(HttpMethod.PUT);
 			response = request.send();
@@ -228,8 +241,8 @@ public class EtagTest {
 	@Test
 	public void testDelete(){
 		try{
-			id = 666;
-			
+			long id = 666;
+			testETagPost(id);
 			//Get Etag. (id = 666)
 			response = client.GET(serviceUrl+id);
 			etag = response.getHeaders().get("Etag");
@@ -240,10 +253,8 @@ public class EtagTest {
 			response = request.send();
 			assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
 			
-			//Add new contact which id is 555.
 			id = 555;
-			testETagPost();
-			
+			testETagPost(id);
 			//SUCCESS : Test DELETE If-None-Match. (ETag is different)
 			request = client.newRequest(serviceUrl+id).header("If-None-Match", etag);
 			request = request.method(HttpMethod.DELETE);
@@ -264,9 +275,10 @@ public class EtagTest {
 	@Test
 	public void failDelete(){
 		try{
-			id = 102;
+			long id = 1111;
+			testETagPost(id);
 			
-			String wrongETag = client.GET(serviceUrl+101).getHeaders().get("Etag");
+			String wrongETag = client.GET(serviceUrl+tester1.getId()).getHeaders().get("Etag");
 			
 			//FAIL : Test DELETE If-Match (ETag is different)
 			request = client.newRequest(serviceUrl+id).header("If-Match", wrongETag);
